@@ -1,9 +1,10 @@
-import { BookOpen, CheckCircle2, FileText, Plus, Save, Search, Trash2, User, X } from 'lucide-react';
+import { BookOpen, CheckCircle2, FileSpreadsheet, FileText, Plus, Save, Search, Trash2, User, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { Header } from './Header';
 import { useApp } from '../context/AppContext';
 import { StudentSemesterRecord, SubjectGrade } from '../types';
 import { ImportPdfModal } from './ImportPdfModal';
+import { ImportCatatanExcelModal } from './ImportCatatanExcelModal';
 
 export const CatatanSiswaView: React.FC = () => {
   const {
@@ -35,6 +36,7 @@ export const CatatanSiswaView: React.FC = () => {
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [showExcelModal, setShowExcelModal] = useState(false);
 
   const filteredStudents = students.filter(s =>
     s.namaLengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -316,14 +318,23 @@ export const CatatanSiswaView: React.FC = () => {
                 <BookOpen className="w-4 h-4 text-emerald-400" />
                 <span>DAFTAR NILAI MATA PELAJARAN</span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowExcelModal(true)}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1.5 cursor-pointer transition shadow-md border border-emerald-400/40"
+                  title="Input cepat nilai, deskripsi, & catatan wali kelas via Template Excel (.xlsx)"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+                  <span>Import Excel (.xlsx)</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowPdfModal(true)}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1.5 cursor-pointer transition shadow-md border border-emerald-400/40"
+                  className="bg-teal-700 hover:bg-teal-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold flex items-center space-x-1.5 cursor-pointer transition shadow-md border border-teal-400/40"
                   title="Otomatis baca Nilai, Deskripsi, Ketidakhadiran, & Catatan Wali Kelas dari PDF e-Rapor"
                 >
-                  <FileText className="w-4 h-4 text-emerald-200" />
+                  <FileText className="w-4 h-4 text-teal-200" />
                   <span>Import PDF e-Rapor</span>
                 </button>
                 <button
@@ -532,6 +543,17 @@ export const CatatanSiswaView: React.FC = () => {
             </button>
           </div>
         </form>
+
+        {/* Modal Import Excel Catatan Nilai */}
+        <ImportCatatanExcelModal
+          isOpen={showExcelModal}
+          onClose={() => setShowExcelModal(false)}
+          onImportSuccess={() => {
+            if (currentStudent) {
+              setRecord(getSemesterRecord(currentStudent.id, selectedClass, selectedSemester));
+            }
+          }}
+        />
 
         {/* Modal Import PDF e-Rapor */}
         <ImportPdfModal
