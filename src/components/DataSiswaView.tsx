@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Header } from './Header';
 import { useApp } from '../context/AppContext';
 import { formatIndonesianDate } from '../utils/dateUtils';
+import { formatGoogleDriveImageUrl } from '../utils/imageUtils';
 import { ExcelImportModal } from './ExcelImportModal';
 import { ImportPdfModal } from './ImportPdfModal';
 import { StudentDetail } from '../types';
@@ -319,7 +320,12 @@ export const DataSiswaView: React.FC = () => {
                       <td className="p-3 font-semibold text-slate-900">
                         <div className="flex items-center space-x-2">
                           {s.fotoUrl && (
-                            <img src={s.fotoUrl} alt={s.namaLengkap} className="w-7 h-7 rounded-full object-cover border border-slate-200" />
+                            <img
+                              src={formatGoogleDriveImageUrl(s.fotoUrl)}
+                              alt={s.namaLengkap}
+                              className="w-7 h-7 rounded-full object-cover border border-slate-200"
+                              referrerPolicy="no-referrer"
+                            />
                           )}
                           <span>{s.namaLengkap}</span>
                         </div>

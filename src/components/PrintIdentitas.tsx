@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PrintWrapper } from './PrintWrapper';
 import { useApp } from '../context/AppContext';
 import { formatIndonesianDate } from '../utils/dateUtils';
+import { formatGoogleDriveImageUrl } from '../utils/imageUtils';
 
 export const PrintIdentitas: React.FC = () => {
   const { schoolData, academicYear, getStudentById, selectedStudentId, students } = useApp();
   const currentStudent = getStudentById(selectedStudentId || '') || students[0];
+  const [fallbackIdx, setFallbackIdx] = useState(0);
 
   if (!currentStudent) return null;
 
@@ -149,7 +151,15 @@ export const PrintIdentitas: React.FC = () => {
           <div className="col-span-4 flex justify-center">
             <div className="w-28 h-36 border-2 border-slate-800 flex items-center justify-center overflow-hidden bg-slate-50 relative p-1">
               {currentStudent.fotoUrl ? (
-                <img src={currentStudent.fotoUrl} alt={currentStudent.namaLengkap} className="w-full h-full object-cover" />
+                <img
+                  src={formatGoogleDriveImageUrl(currentStudent.fotoUrl, fallbackIdx)}
+                  alt={currentStudent.namaLengkap}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={() => {
+                    if (fallbackIdx < 2) setFallbackIdx(prev => prev + 1);
+                  }}
+                />
               ) : (
                 <span className="text-[10px] text-slate-400 text-center font-bold uppercase">Pas Foto 3x4</span>
               )}

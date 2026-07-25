@@ -17,9 +17,14 @@ export const SchoolInfographic: React.FC = () => {
   const countPindah = students.filter(s => s.statusSiswa === 'Pindah').length;
   const countKeluar = students.filter(s => s.statusSiswa === 'Keluar').length;
 
-  // Class distribution (diterimaDiKelas / active class)
+  // Class distribution (diterimaDiKelas / active class like 1, 1A, 1B, Kelas 1, etc.)
   const classDist = [1, 2, 3, 4, 5, 6].map(k => {
-    const count = students.filter(s => s.diterimaDiKelas === k).length;
+    const count = students.filter(s => {
+      if (!s.diterimaDiKelas) return false;
+      const cls = String(s.diterimaDiKelas).trim().toUpperCase();
+      const kStr = String(k);
+      return cls === kStr || cls.startsWith(kStr) || cls.startsWith(`KELAS ${kStr}`);
+    }).length;
     const pct = totalSiswa > 0 ? Math.round((count / totalSiswa) * 100) : 0;
     return { kelas: k, count, pct };
   });
@@ -152,9 +157,22 @@ export const SchoolInfographic: React.FC = () => {
 
         {/* Class Level Distribution (7 cols) */}
         <div className="md:col-span-7 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4">
-          <h3 className="text-xs font-extrabold uppercase tracking-wider text-emerald-300 mb-3 border-b border-white/10 pb-1.5">
-            DISTRIBUSI SISWA PER TINGKAT KELAS
-          </h3>
+          <div className="flex justify-between items-center mb-3 border-b border-white/10 pb-1.5">
+            <h3 className="text-xs font-extrabold uppercase tracking-wider text-emerald-300">
+              DISTRIBUSI SISWA PER TINGKAT KELAS
+            </h3>
+            {totalSiswa === 0 && (
+              <span className="text-[10px] bg-amber-500/20 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-400/30">
+                Belum Ada Data
+              </span>
+            )}
+          </div>
+
+          {totalSiswa === 0 && (
+            <div className="text-[11px] text-amber-200/90 font-medium mb-2.5 bg-amber-900/30 p-2 rounded-lg border border-amber-500/20">
+              💡 Data kosong karena belum ada siswa terdaftar. Tambahkan atau import siswa melalui menu <strong>DATA SISWA</strong> atau <strong>DATA AWAL</strong>.
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {classDist.map(item => (

@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PrintWrapper } from './PrintWrapper';
 import { useApp } from '../context/AppContext';
+import { formatGoogleDriveImageUrl } from '../utils/imageUtils';
 
 export const PrintCover: React.FC = () => {
   const { schoolData, academicYear, getStudentById, selectedStudentId, students } = useApp();
   const currentStudent = getStudentById(selectedStudentId || '') || students[0];
+  const [logoFallback, setLogoFallback] = useState(0);
 
   return (
     <PrintWrapper documentTitle="COVER BUKU INDUK SISWA">
@@ -14,7 +16,15 @@ export const PrintCover: React.FC = () => {
         <div className="space-y-3 mt-6">
           <div className="w-24 h-24 mx-auto flex items-center justify-center border-2 border-slate-800 rounded-full p-2">
             {schoolData.logoUrl ? (
-              <img src={schoolData.logoUrl} alt="Logo Sekolah" className="w-full h-full object-contain" />
+              <img
+                src={formatGoogleDriveImageUrl(schoolData.logoUrl, logoFallback)}
+                alt="Logo Sekolah"
+                className="w-full h-full object-contain"
+                referrerPolicy="no-referrer"
+                onError={() => {
+                  if (logoFallback < 2) setLogoFallback(prev => prev + 1);
+                }}
+              />
             ) : (
               <span className="text-3xl font-black">SD</span>
             )}

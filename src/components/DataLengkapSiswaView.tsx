@@ -1,8 +1,9 @@
-import { CheckCircle2, Heart, Home, Save, Search, User, Users, X } from 'lucide-react';
+import { CheckCircle2, Heart, Home, Image as ImageIcon, Link2, Save, Search, Upload, User, Users, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { Header } from './Header';
 import { useApp } from '../context/AppContext';
 import { StudentDetail } from '../types';
+import { convertFileToBase64, formatGoogleDriveImageUrl, isGoogleDriveUrl } from '../utils/imageUtils';
 
 export const DataLengkapSiswaView: React.FC = () => {
   const { students, selectedStudentId, setSelectedStudentId, updateStudent, getStudentById, rombelList } = useApp();
@@ -12,6 +13,8 @@ export const DataLengkapSiswaView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'identitas' | 'orangtua' | 'fisik' | 'foto'>('identitas');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [imgFallbackIndex, setImgFallbackIndex] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const filteredStudents = students.filter(s =>
     s.namaLengkap.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -559,41 +562,143 @@ export const DataLengkapSiswaView: React.FC = () => {
           {activeTab === 'foto' && (
             <div className="space-y-4">
               <h3 className="font-extrabold text-slate-800 border-b pb-2 text-base">Foto Pas Siswa & Status Keberadaan</h3>
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                <div className="w-32 h-40 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center overflow-hidden bg-slate-50 relative group">
-                  {formData.fotoUrl ? (
-                    <img src={formData.fotoUrl} alt={formData.namaLengkap} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xs text-slate-400 text-center p-2">Foto 3x4 Pas Siswa</span>
+              <div className="flex flex-col sm:flex-row items-start gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                
+                {/* Photo Preview Frame */}
+                <div className="flex flex-col items-center shrink-0 space-y-2">
+                  <div className="w-32 h-40 border-2 border-emerald-500/40 rounded-xl flex items-center justify-center overflow-hidden bg-white shadow-md relative group">
+                    {formData.fotoUrl ? (
+                      <img
+                        src={formatGoogleDriveImageUrl(formData.fotoUrl, imgFallbackIndex)}
+                        alt={formData.namaLengkap}
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                        onError={() => {
+                          if (imgFallbackIndex < 2) {
+                            setImgFallbackIndex(prev => prev + 1);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="text-center p-3 text-slate-400 space-y-1">
+                        <ImageIcon className="w-8 h-8 mx-auto text-slate-300" />
+                        <span className="text-[10px] font-bold block">Foto 3x4 Pas Siswa</span>
+                      </div>
+                    )}
+                  </div>
+                  {formData.fotoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, fotoUrl: '' });
+                        setImgFallbackIndex(0);
+                      }}
+                      className="text-[11px] text-rose-600 font-bold hover:underline"
+                    >
+                      Hapus Foto
+                    </button>
                   )}
                 </div>
 
-                <div className="space-y-3 flex-1 w-full">
+                {/* Photo URL & Local Upload Input */}
+                <div className="space-y-3.5 flex-1 w-full">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">URL Foto Pas Siswa (3x4)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-800 uppercase flex items-center space-x-1.5">
+                        <Link2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>URL Foto Pas Siswa (3x4) / Link Google Drive</span>
+                      </label>
+                      {isGoogleDriveUrl(formData.fotoUrl) && (
+                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-md border border-emerald-300 flex items-center space-x-1">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                          <span>Google Drive Link Terdeteksi</span>
+                        </span>
+                      )}
+                    </div>
+                    
                     <input
                       type="text"
                       value={formData.fotoUrl || ''}
-                      onChange={e => setFormData({ ...formData, fotoUrl: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm"
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const formatted = formatGoogleDriveImageUrl(raw);
+                        setFormData({ ...formData, fotoUrl: formatted });
+                        setImgFallbackIndex(0);
+                      }}
+                      placeholder="Tempelkan URL gambar atau link berbagi Google Drive..."
+                      className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 bg-white"
                     />
+
+                    {/* Google Drive Tip */}
+                    <div className="mt-1.5 p-2 bg-emerald-50/70 border border-emerald-200 rounded-lg text-[11px] text-emerald-900 space-y-0.5">
+                      <p className="font-extrabold flex items-center space-x-1">
+                        <span>💡 Dukungan Google Drive:</span>
+                      </p>
+                      <p className="text-slate-600">
+                        Anda dapat menyematkan link berbagi dari Google Drive (contoh: <code className="bg-emerald-100 px-1 py-0.5 rounded text-emerald-950 font-mono text-[10px]">https://drive.google.com/file/d/XXX/view</code>). Sistem secara otomatis mengonversinya menjadi URL foto langsung.
+                      </p>
+                      <p className="text-amber-800 font-semibold text-[10px]">
+                        ⚠️ Pastikan akses berkas di Google Drive diatur ke: <strong>"Siapa saja yang memiliki link" (Public/Anyone with link)</strong>.
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Status Siswa</label>
-                      <select
-                        value={formData.statusSiswa}
-                        onChange={e => setFormData({ ...formData, statusSiswa: e.target.value as any })}
-                        className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white font-bold"
-                      >
-                        <option value="Aktif">Aktif</option>
-                        <option value="Lulus">Lulus</option>
-                        <option value="Pindah">Pindah Sekolah</option>
-                        <option value="Keluar">Keluar / Putus Sekolah</option>
-                      </select>
-                    </div>
+                  {/* Alternative: Local File Upload */}
+                  <div className="border-t border-slate-200 pt-3">
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1 flex items-center space-x-1.5">
+                      <Upload className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Atau Unggah Berkas Foto dari Komputer / Perangkat</span>
+                    </label>
+                    
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="photo-file-upload-input"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          setUploadError(null);
+                          const base64 = await convertFileToBase64(file);
+                          setFormData({ ...formData, fotoUrl: base64 });
+                          setImgFallbackIndex(0);
+                        } catch (err: any) {
+                          setUploadError(err?.message || 'Gagal mengunggah gambar.');
+                        }
+                      }}
+                    />
+
+                    <label
+                      htmlFor="photo-file-upload-input"
+                      className="inline-flex items-center space-x-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold px-3.5 py-1.5 rounded-xl text-xs cursor-pointer transition active:scale-95"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Pilih Berkas Foto (JPG / PNG)</span>
+                    </label>
+
+                    {uploadError && (
+                      <p className="text-rose-600 text-[11px] font-bold mt-1">{uploadError}</p>
+                    )}
+                  </div>
+
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Status Siswa</label>
+                  <select
+                    value={formData.statusSiswa}
+                    onChange={e => setFormData({ ...formData, statusSiswa: e.target.value as any })}
+                    className="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white font-bold"
+                  >
+                    <option value="Aktif">Aktif</option>
+                    <option value="Lulus">Lulus</option>
+                    <option value="Pindah">Pindah Sekolah</option>
+                    <option value="Keluar">Keluar / Putus Sekolah</option>
+                  </select>
+                </div>
 
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase mb-1">No. Ijazah (Jika Lulus)</label>
@@ -617,8 +722,6 @@ export const DataLengkapSiswaView: React.FC = () => {
                       />
                     </div>
                   </div>
-                </div>
-              </div>
             </div>
           )}
 
